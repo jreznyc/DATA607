@@ -1,0 +1,69 @@
+---
+title: "Data 607 HW 1 - Mushrooms"
+author: "John Perez"
+date: "1/31/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Dataset & view structure
+
+```{r load_data}
+library(RCurl)
+library(plyr)
+path <- getURL("https://raw.githubusercontent.com/jreznyc/datasets/master/Mushrooms/mushrooms.csv")
+df <- read.csv(text=path, header=TRUE)
+str(df)
+```
+After an initial view of the data variables, let's perform some basic exploration in terms of whether or not a mushroom is edible or poisonous.
+
+## Exploration
+Let's look at some of the different variables and how they relate to whether or not a mushroom is edible by performing some basic visualizations. 
+
+### Overall Edible/Poisonous proportion
+
+```{r overall_class} 
+df$class <- revalue(df$class, c("e"="edible", "p"="poisonous"))
+barplot(table(df$class)/8124, main="Proportion of Edible/Poisonous Mushrooms",col=c('blue','red'))
+```
+  
+### Cap shape
+Below, I generate a side-by-side barplot from a proportional contingency table. We can see that vast majority of mushrooms, both poisonous and edible, have either flat or convex caps. However, within poisonous mushrooms we see that there is a slightly larger proportion of knobbed caps. Let's continue looking at the other variables... 
+
+```{r cap_shape}
+df$cap.shape <- revalue(df$cap.shape,c("b"="bell","c"="conical","x"="convex","f"="flat","k"="knobbed","s"="sunken"))
+barplot(prop.table(table(df$class, df$cap.shape)), beside=TRUE, main="Cap Shape Proportions", legend=TRUE, col=c('blue','red'), args.legend=c(x='topleft'))
+```
+  
+## Variable selection
+
+We can view these plots for remaining variables using a for loop to generate the same type of bar graph as above for each. This allows a quick look through each to help identify variables to isolate for later analysis.  
+Within each variable, if there is a stark difference in any individual characteristic between edible or poisonous mushrooms, that would potentially be a good variable to analyze later.
+
+_Note: Plots arranged in a grid for length_
+
+```{r automated graph gen}
+#how to loop through df columns: https://stackoverflow.com/questions/18462736/loop-through-columns-and-add-string-lengths-as-new-columns
+#https://www.statmethods.net/advgraphs/layout.html
+
+par(mfrow=c(6,4), mar=c(1,1,1,1))
+for(i in names(df[3:23])) {
+    barplot(prop.table(table(df$class, df[[i]])), beside=TRUE, main=i, legend=FALSE, col=c('blue','red'), args.legend=c(x='topleft'))
+}
+```
+  
+## Variable Selection and Data Frame Transformations
+  After reviewing the previous graphs, the variables I'd choose for consideration are odor, gill color, gill size, and spore print color. Now I'll create a new dataframe with those variables.
+  
+```{r subset}
+df2 <- df[c('class', 'odor', 'gill.color', 'gill.size','spore.print.color')]
+df2$odor <- revalue(df$odor, c("a"="almond","l"="anise","c"="creosote","y"="fishy","f"="foul","m"="musty","n"="none","p"="pungent","s"="spicy"))
+df2$gill.color <- revalue(df$gill.color, c("k"="black","n"="brown","b"="buff","h"="chocolate","g"="gray", "r"="green","o"="orange","p"="pink","u"="purple","e"="red","w"="white","y"="yellow"))
+df2$gill.size <- revalue(df$gill.size, c("b"="broad","n"="narrow"))
+df2$spore.print.color <- revalue(df$spore.print.color, c("k"="black","n"="brown","b"="buff","h"="chocolate","g"="gray", "r"="green","o"="orange","p"="pink","u"="purple","e"="red","w"="white","y"="yellow"))
+colnames(df2) <- c('Class', 'Odor', 'Gill Color', 'Gill Size', 'Spore Print Color')
+head(df2)
+```

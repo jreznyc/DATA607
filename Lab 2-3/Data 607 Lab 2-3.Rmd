@@ -1,0 +1,22 @@
+---
+title: "Data 607 Lab 2-3"
+author: "John Perez"
+date: "2/5/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(RMySQL)
+```
+
+## R Markdown
+
+```{r}
+#load data and interact with MySQL via: http://rpubs.com/kfolsom98/152912
+db <- dbConnect(MySQL(), user='data607', password='1234', dbname='db', host='35.226.66.59')
+#query <- "select country, year, sex, child + adult + elderly as cases from tb"
+query <- "select * from tb limit 10"
+dbGetQuery(db, query)
+```
+
