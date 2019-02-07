@@ -4,19 +4,35 @@ author: "John Perez"
 date: "2/5/2019"
 output: html_document
 ---
-
+##Load Libraries
+  RMySQL
+  RCurl
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(RMySQL)
+library(RCurl)
 ```
 
-## R Markdown
+## Connect & Load SQL into Data Frame
 
-```{r}
+```{r load sql}
 #load data and interact with MySQL via: http://rpubs.com/kfolsom98/152912
 db <- dbConnect(MySQL(), user='data607', password='1234', dbname='db', host='35.226.66.59')
-#query <- "select country, year, sex, child + adult + elderly as cases from tb"
-query <- "select * from tb limit 10"
-dbGetQuery(db, query)
+query <- "SELECT country, year, SUM(child)+sum(adult)+sum(elderly) as 'cases'  from tb group by year, country;"
+tb <- dbGetQuery(db, query)
+head(tb)
 ```
 
+```{r load csv}
+path <- getURL("https://raw.githubusercontent.com/jreznyc/DATA607/master/LABS/Lab%202-3/population.csv")
+df <- read.csv(text=path, header=TRUE)
+head(df)
+```
+
+new df
+```{r append rate}
+tb<-merge(tb,df)
+tb['rate'] <- (tb['cases'] / tb['population'])
+tb<-tb[c('country','year','rate')]
+head(tb)
+```

@@ -1,0 +1,52 @@
+---
+title: "Data 607 HW 2"
+author: "John Perez"
+date: "2/7/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(RMySQL)
+library(RCurl)
+library(DT)
+```
+
+## Connect & Load SQL into R Data Frame
+  
+Nine responses were collected for 5 movies currently in theaters.  
+The responses were collected into a MySQL table via the following SQL code:  
+```{sql eval=FALSE}
+DROP TABLE IF EXISTS movies;
+CREATE TABLE movies 
+(
+ name varchar(50) NOT NULL,
+ cold_pursuit int NOT NULL,
+ lego_2 int NOT NULL,
+ prodigy int NOT NULL,
+ peppa_pig int NOT NULL,
+ chokehold int NOT NULL
+);
+
+INSERT INTO movies
+VALUES
+("Isabel",1,2,4,4,3),
+("Frank",5,2,1,2,3),
+("Joe",0,4,2,1,2),
+("Matt",0,1,1,2,3),
+("Dave",4,2,2,0,1),
+("John",3,2,3,1,1),
+("Chris",0,4,3,5,1),
+("Danny",4,3,4,0,3),
+("Nicole",4,2,5,4,0);
+```
+
+
+We then connect to the table via RMySQL and load it into an R dataframe.  
+```{r load sql}
+db <- dbConnect(MySQL(), user='data607', password='1234', dbname='db', host='35.226.66.59')
+query <- "SELECT * from movies;"
+movies <- dbGetQuery(db, query)
+datatable(movies)
+```
+
