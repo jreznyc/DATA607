@@ -1,0 +1,59 @@
+---
+title: "Data 607 Project 1"
+author: "John Perez"
+date: "2/16/2019"
+output: html_document
+---
+```{r, include=FALSE}
+library(stringr)
+library(DT)
+```
+
+## Introduction 
+In this project we are given a semi-structured text file and tasked with parsing, and exporting it into a structured CSV file that can be useful for later analysis. With the stringr package, we can extract specific text of interest using regular expressions, begin to structure the data into variables, and manipulate it for our needs. 
+
+## Import Text File
+```{r}
+l <- readLines("tournamentinfo.txt")
+l <- str_trim(grep("^\\|?-+\\|?$|^$", l, value=TRUE, invert=TRUE)) #basic cleanup remove unnecessary lines
+l <- str_trim(l)
+
+playerID<-c()
+name<-c()
+state<-c()
+points<-c()
+rating<-c()
+opponents_matrix<-matrix(nrow=64,ncol=7)
+for(i in 1:length(l)){
+    if(i%%2!=0 && i!=1){
+        thisplayer <- as.integer(str_trim(unlist(str_split(l[i], "\\|" ))[1]))
+        playerID <- c(playerID,thisplayer)
+        name <- c(name,str_trim(unlist(str_split(l[i], "\\|" ))[2]))
+        state <- c(state,str_trim(unlist(str_split(l[i+1], "\\|" ))[1]))
+        points <- c(points,str_trim(unlist(str_split(l[i], "\\|" ))[3]))
+        rating <- as.integer(c(rating,str_extract(unlist(str_split(l[i+1], "\\|" ))[2], "(?<=R:  ?)[0-9]+")))
+        opponents_matrix[thisplayer,] <- c(as.integer(str_extract_all(unlist(str_split(l[i], "\\|" ))[-c(1,2,3,11)], "\\d+")))
+    }
+}
+df<- data.frame(name,state,points,rating)
+rownames(df)<- playerID
+head(df)
+```
+collect opponent ratings, calculate averages, and add column to data frame
+```{r}
+getavg <- function(id){
+    round(mean(df[opponents_matrix[id,],'rating'],na.rm=TRUE))
+}
+for(i in 1:nrow(df)){
+    df$avg_opp_rating[i]<- getavg(i)
+}
+datatable(df)
+```
+Export dataframe to csv 
+```{r}
+write.csv(df, file="output_data.csv", quote=FALSE)
+```
+
+Sources:  
+https://stackoverflow.com/questions/21114598/importing-a-text-file-into-r  
+https://stackoverflow.com/questions/35804379/stringr-str-extract-how-to-do-positive-lookbehind
