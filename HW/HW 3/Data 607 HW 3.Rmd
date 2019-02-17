@@ -1,0 +1,63 @@
+---
+title: "Data 607 HW 3"
+author: "John Perez"
+date: "2/16/2019"
+output: html_document
+---
+
+## Question 3  
+  
+(a) Conform all elements to standard first_name last_name
+```{r}
+library(stringr)
+raw.data <-"555-1239Moe Szyslak(636) 555-0113Burns, C. Montgomery555-6542Rev. Timothy Lovejoy555 8904Ned Flanders636-555-3226Simpson, Homer5553642Dr. Julius Hibbert"
+name <- unlist(str_extract_all(raw.data, "[[:alpha:]., ]{2,}"))
+phone <- unlist(str_extract_all(raw.data, "\\(?(\\d{3})?\\)?(-| )?\\d{3}(-| )?\\d{4}"))
+df<-data.frame(name = name, phone = phone, stringsAsFactors=FALSE)
+
+for(i in 1:nrow(df)) {
+    if(str_detect(df$name[i],",")){
+        split <- strsplit(df$name[i], split = ", ")
+        df$name[i]<-str_c(split[[1]][2], " ", split[[1]][1])
+    }
+}
+df
+```
+(b) Construct a logical vector indicating whether a character has a title 
+```{r}
+title <- str_detect(df$name, "\\w{2,}\\.")
+title
+```
+(c) Construct a logical vector indicating whether a character has a second name 
+```{r}
+second_name <- c()
+for(i in 1:nrow(df)) {
+    if(length(strsplit(df$name[i],split=" ")[[1]]) > 2){ #if greater than 2 words
+        if(str_detect(df$name[i], "[A-Z]\\.")){ #if 1 letter abbrv. mark as true
+            second_name[i]<-TRUE
+        }else{
+            second_name[i]<-FALSE
+        }
+    }else{
+        second_name[i]<-FALSE
+    }
+}
+second_name
+```
+
+## Question 4  
+(a) This looks for one or more digits at the end of a string. ex: "1234" 
+(b) This looks for any lowercase word between 1 and 4 characters. ex: "test"
+(c) This looks for any string ending in ".txt". ex: "123abc.txt"
+(d) This looks for any 2 digits followed by slash, followed by 2 digits, followed by slash, followed by 4 digits. ex: "11/23/1999"
+(e) This looks for a "<" character followed by any characters followed by ">". It then matches any characters, then a "</" followed by the same result from the first group. ex: "\<anything\>sometext\</anything\>"
+
+## Question 9
+
+```{r}
+text <- "clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0TanwoUwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigOd6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr"
+message <- unlist(str_extract_all(text, "[[:upper:].]"))
+message <- str_replace_all(paste(message, collapse=''),"\\."," ")
+message
+```
+
