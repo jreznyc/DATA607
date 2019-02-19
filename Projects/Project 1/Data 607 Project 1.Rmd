@@ -12,12 +12,37 @@ library(DT)
 ## Introduction 
 In this project we are given a semi-structured text file and tasked with parsing, and exporting it into a structured CSV file that can be useful for later analysis. With the stringr package, we can extract specific text of interest using regular expressions, begin to structure the data into variables, and manipulate it for our needs. 
 
-## Import Text File
-```{r}
-l <- readLines("tournamentinfo.txt")
-l <- str_trim(grep("^\\|?-+\\|?$|^$", l, value=TRUE, invert=TRUE)) #basic cleanup remove unnecessary lines
-l <- str_trim(l)
+## Import text file  
+  
+  Below we read the text file using the readLines function, which creates a character vector containing each line of the text file as an element.  
+  
+```{r import file}
+l <- readLines("https://raw.githubusercontent.com/jreznyc/DATA607/master/Projects/Project%201/tournamentinfo.txt")
+head(l)
+``` 
 
+In order to make subsquent analysis easier by leaving each player's information on every two lines, here we remove the unneccesary horizontal lines of dashes in the original text file and trim the whitespace. This leaves each player's respective information on two lines.^1^  
+
+```{r remove unneccessary lines}
+l <- str_trim(grep("^\\|?-+\\|?$|^$", l, value=TRUE, invert=TRUE)) 
+head(l)
+```
+
+## Build dataframe with desired information  
+
+Here we declare vectors for each variable we want to include in the final output. At this stage we will build the following variables:  
+
+*  **playerID** - identifier for each player to be used as primary key. 
+*  **name** - player name.  
+*  **state** - player state.  
+*  **points** - player's points.  
+*  **rating** - player's pre-rating. ^2^  
+*  **opponents_matrix** - a matrix containing one row for each player and 7 columns corresponding to each possible match played. The playerID of each opponent will be populated here.  This matrix will be used as a reference for later calculation of the average rating of opponents for each player.  
+  
+Below we declare the above mentioned variables and loop through each line to extract the desired information. Since we know that each player's information is on a odd and even line,  we have the loop skip the header and run the nested code on each odd line.  
+For each variable we use regex to capture that particular information by splitting the line using the pipes "\|" which were left intact within each line of player information as split points to easily access a given piece of information. Below we see the output of this step.  
+
+```{r}
 playerID<-c()
 name<-c()
 state<-c()
@@ -31,15 +56,21 @@ for(i in 1:length(l)){
         name <- c(name,str_trim(unlist(str_split(l[i], "\\|" ))[2]))
         state <- c(state,str_trim(unlist(str_split(l[i+1], "\\|" ))[1]))
         points <- c(points,str_trim(unlist(str_split(l[i], "\\|" ))[3]))
-        rating <- as.integer(c(rating,str_extract(unlist(str_split(l[i+1], "\\|" ))[2], "(?<=R:  ?)[0-9]+")))
-        opponents_matrix[thisplayer,] <- c(as.integer(str_extract_all(unlist(str_split(l[i], "\\|" ))[-c(1,2,3,11)], "\\d+")))
+        rating <- as.integer(c(rating,str_extract(unlist(
+            str_split(l[i+1], "\\|" ))[2], "(?<=R:  ?)[0-9]+")))
+        opponents_matrix[thisplayer,] <- c(as.integer(str_extract_all(
+            unlist(str_split(l[i], "\\|" ))[-c(1,2,3,11)], "\\d+")))
     }
 }
 df<- data.frame(name,state,points,rating)
 rownames(df)<- playerID
 head(df)
 ```
-collect opponent ratings, calculate averages, and add column to data frame
+## Calculate opponent average  
+
+The next step is to calculate the average opponent rating for each player. Using the opponents_matrix and each playerID as a key we iterate through each player in the dataframe, looking up their opponents, calculating the average and assign that value to a new column named "avg_opp_rating" which is added to the dataframe.  
+At the end of this step we have the desired dataframe which we can subsequently export to a csv file.  
+
 ```{r}
 getavg <- function(id){
     round(mean(df[opponents_matrix[id,],'rating'],na.rm=TRUE))
@@ -49,11 +80,15 @@ for(i in 1:nrow(df)){
 }
 datatable(df)
 ```
-Export dataframe to csv 
+
+## Write dataframe to csv  
+
+Finally, we write the dataframe to a csv file containing the desired columns.  
+
 ```{r}
 write.csv(df, file="output_data.csv", quote=FALSE)
 ```
 
 Sources:  
-https://stackoverflow.com/questions/21114598/importing-a-text-file-into-r  
-https://stackoverflow.com/questions/35804379/stringr-str-extract-how-to-do-positive-lookbehind
+1)  https://stackoverflow.com/questions/21114598/importing-a-text-file-into-r  
+2)  https://stackoverflow.com/questions/35804379/stringr-str-extract-how-to-do-positive-lookbehind
