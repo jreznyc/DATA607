@@ -68,7 +68,8 @@ head(df)
 ```
 ## Calculate opponent average  
 
-The next step is to calculate the average opponent rating for each player. Using the opponents_matrix and each playerID as a key we iterate through each player in the dataframe, looking up their opponents, calculating the average and assign that value to a new column named "avg_opp_rating" which is added to the dataframe.  
+The next step is to calculate the average opponent rating for each player. Using the opponents_matrix and each playerID as a key we iterate through each player in the dataframe, looking up their opponents' ratings, calculating the average and assigning that value to a new column named "avg_opp_rating" which is added to the dataframe.  
+  
 At the end of this step we have the desired dataframe which we can subsequently export to a csv file.  
 
 ```{r}
