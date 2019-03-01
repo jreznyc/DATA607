@@ -381,13 +381,14 @@ $(document).ready(function () {
 <p>For this assignment, we are tasked with ‘tidying’ the example data. First I reproduced the data into a csv file which we load into an R dataframe.</p>
 <pre class="r"><code>library(tidyr)
 library(dplyr)
-df &lt;-read.csv(&quot;/Users/jp/Dropbox/Data Science MS/Github/DATA607/HW/HW 5/flights.csv&quot;)
+df &lt;-read.csv(&quot;https://raw.githubusercontent.com/jreznyc/DATA607/master/HW/HW%205/flights.csv&quot;)
 head(df)</code></pre>
 <pre><code>##   airline arr_status Los.Angeles Phoenix San.Diego San.Francisco Seattle
 ## 1  ALASKA    on time         497     221       212           503    1841
 ## 2  ALASKA    delayed          62      12        20           102     305
 ## 3 AM WEST    on time         694    4840       383           320     201
 ## 4 AM WEST    delayed         117     415        65           129      61</code></pre>
+<p>The first transformation will be to gather the variable columns into one column named “city”</p>
 <pre class="r"><code>df2 &lt;- gather(df,&quot;city&quot;,&quot;count&quot;,3:7)
 head(df2)</code></pre>
 <pre><code>##   airline arr_status        city count
@@ -397,6 +398,7 @@ head(df2)</code></pre>
 ## 4 AM WEST    delayed Los.Angeles   117
 ## 5  ALASKA    on time     Phoenix   221
 ## 6  ALASKA    delayed     Phoenix    12</code></pre>
+<p>Next, we’ll spread the arrival status column, contains on time and delayed counts across two rows for each city and airline. We’ll spread this out into two columns, one for delayed values and the other for on time values.</p>
 <pre class="r"><code>df3 &lt;- spread(df2, arr_status, count)
 head(df3)</code></pre>
 <pre><code>##   airline          city delayed on time
@@ -422,7 +424,7 @@ head(df4)</code></pre>
 ##   &lt;fct&gt;    &lt;int&gt;   &lt;int&gt;
 ## 1 ALASKA     501    3274
 ## 2 AM WEST    787    6438</code></pre>
-<p>The counts don’t provide a clear picture to compare the performance of both airlines, so let’s look at the number of delays in proportion to total flights for each airline.</p>
+<p>The counts don’t provide a clear picture to compare the relative performance of both airlines, so let’s look at the number of delays in proportion to total flights for each airline.</p>
 <pre class="r"><code>df4 %&gt;% group_by(airline) %&gt;% summarise(delays_percent=round(sum(delayed)/sum(delayed,`on time`)*100,2))</code></pre>
 <pre><code>## # A tibble: 2 x 2
 ##   airline delays_percent
