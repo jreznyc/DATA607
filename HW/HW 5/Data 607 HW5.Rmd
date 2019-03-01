@@ -1,0 +1,43 @@
+---
+title: "Data 607 HW 5"
+author: "John Perez"
+date: "2/27/2019"
+output: html_document
+---
+
+## Tidying and Transforming Data  
+
+For this assignment, we are tasked with 'tidying' the example data. First I reproduced the data into a csv file which we load into an R dataframe.
+
+```{r, message=FALSE}
+library(tidyr)
+library(dplyr)
+df <-read.csv("/Users/jp/Dropbox/Data Science MS/Github/DATA607/HW/HW 5/flights.csv")
+head(df)
+```
+
+```{r}
+df2 <- gather(df,"city","count",3:7)
+head(df2)
+```
+
+```{r}
+df3 <- spread(df2, arr_status, count)
+head(df3)
+```
+Now we have a tidy dataframe where each row corresponds to a combination of airline and city. This facilitates further analysis. Now we can easily compare the arrival times for both airlines. Before we do that, it's worth mentioning that the above operations can be done on one line using pipes. Below is an example of the same transformations performed in one line, then we will count on-time arrivals and delays for both airlines.
+
+```{r}
+df4 <- df %>% gather("city","count",3:7) %>% spread(arr_status, count)
+head(df4)
+
+df4 %>% group_by(airline) %>% summarise(delays=sum(delayed), on_time=sum(`on time`))
+```
+
+The counts don't provide a clear picture to compare the performance of both airlines, so let's look at the number of delays in proportion to total flights for each airline.
+
+```{r}
+df4 %>% group_by(airline) %>% summarise(delays_percent=round(sum(delayed)/sum(delayed,`on time`)*100,2))
+```
+
+Now we can see that Alaska Airlines has a higher percentage of delays than AM West. 
