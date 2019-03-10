@@ -1,0 +1,262 @@
+---
+title: "Data 607 Project 2"
+author: "John Perez"
+date: "3/3/2019"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 1
+        theme: cerulean
+---
+
+```{r libraries, include=FALSE}
+library(tidyr)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(DT)
+```
+# Data set 1 - WW2 planes
+## Introduction
+
+This dataset includes information about the cost of the military planes
+used during World War 2. The filetype is a csv with tab seperated values. In order to properly interpret the tabs, we simply indicate the seperator as being "\\t".  
+First we will import the file, then "tidy" it into a usable form for later analysis.  
+```{r}
+file<- "RawCost.csv"
+rawdf<-read.csv(file, sep="\t",header=TRUE,fill=TRUE)
+head(rawdf,5)
+```
+As we see above, we make the following observations on the data:  
+
+* The data is "wide", containing columns that are a variable (year). 
+* There are many missing fields. 
+* The numerical columns contain commas and have been interpreted as character factors.
+* Many cells contain extraneous whitespace
+
+We will correct each of these items.  
+
+### Tidy operations  
+
+We begin tidying the data by adding interpretable NAs (to be used later to fill in the missing values) to the "Type" column and remove the rows that do not have a value for the column "Model".  
+
+```{r}
+empty_as_na <- function(x){
+    if("factor" %in% class(x)) x <- as.character(x) ## since ifelse wont work with factors
+    ifelse(as.character(x)!="", x, NA)
+}
+df <- rawdf
+df$Type <- empty_as_na(df$Type)
+df$Model[df$Model == "  "] <- NA
+
+head(df,5)
+```
+
+In order to populate the "Type" column's missing values, we will fill in the NA values created in the prior step in the "Type" column with the previous value encountered in the same column using a solution from the R Graphics Cookbook by Winston Chang.^1^
+```{r}
+fillNAgaps <- function(x, firstBack=FALSE) {
+    lvls <- NULL
+    if (is.factor(x)) {
+        lvls <- levels(x)
+        x    <- as.integer(x)
+    }
+    goodIdx <- !is.na(x)
+    if (firstBack)   goodVals <- c(x[goodIdx][1], x[goodIdx])
+    else             goodVals <- c(NA,            x[goodIdx])
+    fillIdx <- cumsum(goodIdx)+1
+    x <- goodVals[fillIdx]
+    if (!is.null(lvls)) {
+        x <- factor(x, levels=seq_along(lvls), labels=lvls)
+    }
+    x
+}
+df$Type <- fillNAgaps(df$Type)
+df<- df[!is.na(df$Model),]
+head(df,5)
+```
+
+As shown above, we now have a value in the Type column for each row corresponding to each aircraft model.  
+The dataframe is still wide though, having columns representing years. We will gather these into one "Year" column and a corresponding value "Cost" column in the chunk below.  
+Additionally, we will convert dashes and empty cells into NA.  
+At the end of this step, we will have a tidy dataframe which we can use to look at the average cost of each aircraft type.  
+
+
+```{r, warning=FALSE}
+colnames(df)[3:7] <- c("1941","1942","1943","1944","1945")
+df <- gather(df, "Year", "Cost", 3:7)
+df$Year <- as.integer(df$Year)
+df$Cost <- str_trim(sub(",", "", df$Cost, fixed = TRUE))
+df$Cost[df$Cost == "-" | df$Cost == ""] <- NA
+df$Cost <- as.integer(df$Cost)
+df$Model <- str_trim(df$Model)
+head(df,5)
+```
+## Exploration  
+
+Now that we have tidied the data, we can perform some exploratory analysis on it such as looking at the average cost of each aircraft type over the course of the war.  We will present that in a horizontal bar plot.  
+
+
+```{r}
+means<- df %>% group_by(Type) %>% summarize(Mean=round(mean(Cost,na.rm=TRUE),0))
+ggplot(means, aes(x=reorder(Type, Mean), y= Mean)) + 
+    xlab("Type") +
+    geom_col() + 
+    coord_flip()
+```
+
+# Data set 2 - Hospital Complications and Deaths  
+
+## Introduction  
+
+The next dataset we will manipulate concerns hospital complications and deaths. One possible insight we'd like to gain from this dataset is assessing the top 10 best and worst hospitals in the country. We will perform the necessary operations to rank and populate the 10 best and worst into a table.  
+First we load the data into a dataframe...  
+
+```{r}
+file <-"Complications_and_Deaths_-_Hospital.csv"
+df2 <-read.csv(file,header=TRUE,fill=TRUE,stringsAsFactors=FALSE)
+datatable(head(df2,5),options=list(pageLength=5,autoHideNavigation=TRUE))
+```
+As we see there are many columns and rows (example above limited to 5 for space).  
+
+We are interested in finding out the most problematic Adverse Events for underperforming hospitals, as well as how hospitals perform in comparison to the national average and ranking the best and worst in terms of that variable.  
+
+Below we perform the following adjustments to the dataframe:  
+
+* Remove rows which do not have a score for a given measure  
+* Convert the Compared.to.National and Measure.Name columns into factors  
+* Replace the string levels in Compared.to.National with numbers -1,0,1 (corresponding to worse, average, better than average respectively) so we can later perform summary operations on them  
+
+For reference, below we print the existing string levels and and show how the transformation changes these to numeric values.  
+```{r}
+df2 <- df2[df2$Score!="Not Available",]
+df2$Compared.to.National <- as.factor(df2$Compared.to.National)
+df2$Measure.Name <- as.factor(df2$Measure.Name)
+levels(df2$Compared.to.National)
+levels(df2$Compared.to.National) <- c(1,1,0,0,-1,-1)
+levels(df2$Compared.to.National)
+```
+
+To ensure the transformation was done properly, here are 2 rows for each of the Compared.To.National levels:  
+
+```{r}
+ex1<-head(df2[df2$Compared.to.National==1,c("Provider.ID","Measure.Name","Compared.to.National")],2)
+ex2<-head(df2[df2$Compared.to.National==0,c("Provider.ID","Measure.Name","Compared.to.National")],2)
+ex3<-head(df2[df2$Compared.to.National==-1,c("Provider.ID","Measure.Name","Compared.to.National")],2)
+rbind(ex1,ex2,ex3)
+```
+Now that the levels are normalized lets answer our initial questions...  
+
+### Which measures of Adverse Events are the most problematic for physicians?  
+
+Below we isolate the instances where a provider performs a given measure worse than national average, count the occurences, then generate a bar plot.  
+This shows that the top five measures being performed worse than average are:  
+
+1.  Death rate for pneumonia patients
+2.  Pressure sores
+3.  Serious complications
+4.  Postoperative Respiratory Failure Rate
+5.  Death rate for heart failure patients
+
+```{r}
+worst<- df2[df2$Compared.to.National==-1,]
+par(mar=c(12,3,1,1))
+barplot(sort(table(worst$Measure.ID),decreasing=TRUE), las=2)
+```
+
+### Which are the 10 best Hospitals?  
+
+Below we look for the 10 hospitals that have the most number of measures being performed better than the national average by their physicians. In order to rank them, we'll group the dataframe by **Hospital.Name** then sum the **Compared.to.National** values for each. Since we previously converted that column into numeric values [-1,0,1] we can sum them to see how many *more* measures they are performing better than average in.    
+
+
+```{r}
+df2$Compared.to.National <- as.numeric(levels(df2$Compared.to.National))[df2$Compared.to.National]
+Hospitals <- df2 %>% group_by(Hospital.Name) %>% summarize(sum=sum(Compared.to.National))
+bestHospitals <- subset(Hospitals, sum>0)
+tenBest <- bestHospitals[order(bestHospitals$sum, decreasing=TRUE),][1:10,]
+datatable(tenBest)
+```
+
+
+### Which are the 10 worst Hospitals?  
+
+Here we'll perform the same analysis but inverted to find the worst hospitals.  
+
+
+```{r}
+worstHospitals <- subset(Hospitals, sum<0)
+tenWorst <- worstHospitals[order(worstHospitals$sum),][1:10,]
+datatable(tenWorst)
+```
+
+
+# Dataset 3 - Google Play Store apps  
+
+## Introduction  
+
+Here we will be working with a dataset containing all the Google Play Store apps and various variables related to each. Some possible analyses we can perform on this dataset includes finding out which are the top apps by installs. We can also look at the different categories of apps, the number of free and paid apps, and how ratings compare between free and paid.  
+
+### Load Data Into Dataframe  
+
+Below we load the data and remove some duplicate rows.  
+
+```{r, warning=FALSE}
+apps <- read.csv("googleplaystore.csv")
+apps <- apps[!duplicated(apps$App),] #remove duplicates
+head(apps,5)
+```
+
+First we'd like to see which are the most installed apps.  One issue with the dataset as we can see above, is that the **Installs** column is composed of text strings. Below, we will transform those values into integers using the gsub() function. Afterward we'll be able to sort the dataframe by the **Installs** column.   
+
+```{r, warning=FALSE}
+apps$Installs <- suppressWarnings(as.numeric(gsub(",", "", str_extract_all(apps$Installs, ".+?(?=\\+)"))))
+app_installs <- apps %>% group_by(App) %>% summarize(Installs=Installs) %>% arrange(desc(Installs))
+datatable(app_installs)
+```
+
+### Distribution of Apps by Category & Type  
+
+Next let's look at the different categories of apps and whether they are free or paid.  
+
+```{r}
+categoryDistr <- apps[-10473,]
+categoryDistr <- categoryDistr[categoryDistr$Type=="Free" | categoryDistr$Type=="Paid",]
+categoryDistr <- categoryDistr %>% 
+  group_by(Category, Type) %>%
+  summarise(num = length(Category))
+
+ggplot(categoryDistr, aes(x=Category, y=num, fill=Type)) + 
+    xlab("Category") +
+    geom_bar(stat="identity") + 
+    coord_flip() +
+    ggtitle("Distribution of apps by category & Type")
+```
+
+Finally let's take a look at the distribution of ratings for both free and paid apps. Once again, the **Price** column is interpreted as characters with a dollar sign. In order to perform this analysis we'll have to convert this into an interpretable number. This will be accomplished by using a regex isolate just the numbers, then cast that into numeric class.  
+
+
+```{r, warning=FALSE}
+apps$Price <- as.character(apps$Price)
+apps$Price <- as.numeric(str_extract_all(apps$Price, "\\d+(\\.\\d+)?"))
+
+freeRatings <- apps[apps$Price==0,]
+paidRatings <- apps[apps$Price!=0,]
+par(mfrow=c(1,2))
+ggplot(paidRatings, aes(x=Rating)) + 
+    geom_line(stat="density", aes(color="Paid")) + 
+    geom_line(data=freeRatings, stat="density", aes(color="Free")) + 
+    ggtitle("Distribution of Ratings for free and paid apps") +
+    scale_color_manual(values = c(
+    "Paid" = "blue",
+    "Free" = "red")) +
+    labs(color = "App Type")
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+Above we can see that the vast majority of apps are free, the top 3 categories are *Family, Games,* and *tools*. We can also see that paid apps tend to be rated higher than free apps.  
+
+
+
+Sources:  
+https://stackoverflow.com/questions/24172111/change-the-blank-cells-to-na  
+http://www.cookbook-r.com/Manipulating_data/Filling_in_NAs_with_last_non-NA_value/  
