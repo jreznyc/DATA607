@@ -1,0 +1,26 @@
+<books>
+	<book>
+		<bookID>1</bookID>
+		<title>The Lean Startup</title>
+		<author>Eric Ries</author>
+		<ISBN-13>978-0307887894</ISBN-13>
+		<Genre>Business</Genre>
+		<Pages>336</Pages>
+	</book>
+	<book>
+		<bookID>2</bookID>
+		<title>Astrophysics for People in a Hurry</title>
+		<author>Neil deGrasse Tyson</author>
+		<ISBN-13>978-0393609394</ISBN-13>
+		<Genre>Astrophysics &nbsp; Space Science</Genre>
+		<Pages>224</Pages>
+	</book>
+	<book>
+		<bookID>3</bookID>
+		<title>The Balanced Scorecard</title>
+		<author>Robert Kaplan, David Norton</author>
+		<ISBN-13>978-0875846514</ISBN-13>
+		<Genre>Business</Genre>
+		<Pages>336</Pages>
+	</book>
+</books>

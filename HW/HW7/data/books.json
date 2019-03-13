@@ -1,0 +1,8 @@
+{
+"bookID": [1, 2, 3],
+"Title": ["The Lean Startup", "Astrophysics for People in a Hurry", "The Balanced Scorecard"],
+"Author" :["Eric Ries", "Neil deGrasse Tyson", ["Robert Kaplan", "David Norton"]],
+"ISBN-13" :["978-0307887894", "978-0393609394", "978-0875846514"],
+"Genre": ["Business", "Astrophysics & Space Science", "Business"],
+"Pages": [336, 224, 336]
+}
