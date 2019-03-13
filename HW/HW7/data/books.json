@@ -1,6 +1,6 @@
 {"books": [
 	{
-	"bookID": 1
+	"bookID": 1,
 	"title" : "The Lean Startup",
 	"author" : "Eric Ries",
 	"ISBN-13" : "978-0307887894",
@@ -8,7 +8,7 @@
 	"Pages" : 336
 	},
 	{
-	"bookID": 2
+	"bookID": 2,
 	"title" : "Astrophysics for People in a Hurry",
 	"author" : "Neil deGrasse Tyson",
 	"ISBN-13" : "978-0393609394",
@@ -16,7 +16,7 @@
 	"Pages" : 224
 	},
 	{
-	"bookID": 3
+	"bookID": 3,
 	"title" : "The Balanced Scorecard",
 	"author": ["Robert Kaplan", "David Norton"],
 	"ISBN-13": "978-0875846514",
