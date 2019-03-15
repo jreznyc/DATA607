@@ -1,0 +1,56 @@
+---
+title: "Data 607 HW 7"
+author: "John Perez"
+date: "3/13/2019"
+output: html_document
+---
+
+### Introduction
+
+In this assignment we will connect to and load 3 different data formats into an R dataframe: HTML, XML, and JSON.  
+
+
+```{r, warning=FALSE, message=FALSE}
+library(XML)
+library(RCurl)
+library(jsonlite)
+library(plyr)
+library(dplyr)
+library(knitr)
+```
+  
+### HTML  
+Here we will load an HTML page containing a table into R. This is accomplished 
+using the readHTMLTable function in the XML package. For each of the below examples, we'll 
+use the getURL function from RCurl package to create the connection via http.  
+
+
+```{r}
+file <- getURL("https://raw.githubusercontent.com/jreznyc/DATA607/master/HW/HW7/data/books.html")
+books_html <- readHTMLTable(file,header = TRUE, which = 1)
+kable(books_html)
+```
+    
+### XML  
+
+Below we'll perform the same task, but connecting to an XML file.  I've found the most elegant solution to be using the xmlToList function together with ldply to join the list elements into a dataframe. Finally, we use the select function to remove the ".id" column that gets added by the xmlToList function.      
+
+```{r}
+file <- getURL("https://raw.githubusercontent.com/jreznyc/DATA607/master/HW/HW7/data/books.xml")
+books_xml <- ldply(xmlToList(file),data.frame) %>% select(-.id)
+kable(books_xml)
+```
+  
+### JSON  
+
+Finally, we load in a JSON.  R kept interpreting the column containing the two authors as a column of lists, so to turn that into a character column we use the mutate function.  
+
+```{r}
+file <- getURL("https://raw.githubusercontent.com/jreznyc/DATA607/master/HW/HW7/data/books.json")
+books_json <- fromJSON(file)
+books_json_df <- books_json$books %>% mutate(author = sapply(author, toString)) #To handle the book with two authors
+kable(books_json_df)
+
+```
+
+https://stackoverflow.com/questions/2067098/how-to-transform-xml-data-into-a-data-frame
