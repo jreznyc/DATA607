@@ -1,0 +1,53 @@
+---
+title: "Data 607 HW 9"
+author: "John Perez"
+date: "3/30/2019"
+output: html_document
+---
+
+
+## Assignment Web APIs
+
+Below, we will connect to the New York Times movie reviews API, search for movies containing the string "Star Wars", and create a dataframe.  
+
+```{r, include=FALSE, warning=FALSE, message=FALSE}
+library(stringr)
+library(jsonlite)
+library(dplyr)
+
+```
+
+
+Here I declare a function that takes a string keyword corresponding to the movie we want to search for and ouputs the URL that returns those results. 
+
+The fromJSON() function is used to read the data, and a dataframe is created with the following columns:  
+
++ title
++ mpaa_rating
++ byline
++ summary_short
++ opening_date
++ url
+
+```{r connect NYT}
+nytquery <- function(keywords){
+    queryelem <-  str_c(c("query=",URLencode(keywords)), collapse="")
+    apiKey <- "UR7fDqc0nEUYw8XFye8qtSGOo5zTH8PR"
+    base_url <- "http://api.nytimes.com/svc/movies/v2/reviews/search.json?api-key="
+    url <- str_c(c(base_url, apiKey,"&", 
+    queryelem), collapse = "")
+    return(url)
+}
+
+query <- nytquery("Star Wars")
+results <- fromJSON(query)
+
+results_df <- results$results %>% subset(select=c(display_title,mpaa_rating,byline,summary_short,opening_date))
+
+results_df$url <- results$results$link$url
+results_df$opening_date <- as.Date(results_df$opening_date)
+results_df <- results_df[order(results_df$opening_date),]
+
+DT::datatable(results_df)
+```
+
