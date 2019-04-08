@@ -1,0 +1,150 @@
+---
+title: "Data 607 Project 4 - Document Classification"
+author: "John Perez"
+date: "4/7/2019"
+output: html_document
+---
+
+
+## Introduction  
+
+For this project we will attempt to classify SMS messages as spam or ham using a naive Bayes model. The data was obtained from:  
+http://archive.ics.uci.edu/ml/datasets/sms+spam+collection
+
+The following packages will be used:  
+
+1. tm  
+2. wordcloud  
+3. e1071  
+
+```{r setup, include=FALSE, warning=FALSE,message=FALSE}
+library(tm)
+library(wordcloud)
+library(e1071)
+library(dplyr)
+```
+
+
+## Load Data  
+
+First we load the data into dataframes with two columns, "type" and "text". The type column labels whether that message is spam or ham and text contains the raw text content of the sms message.  The data contains 747 spam messages and 4827 ham messages.  
+
+
+```{r, warning=FALSE}
+file <- "data/SMSSpamCollection"
+df <- read.csv(file, sep = "\t")
+df <- read.table(file,sep="\t",quote="")
+colnames(df)<- c("type","text")
+
+length(which(df$type == "spam"))
+length(which(df$type == "ham"))
+```
+
+## Create & Clean Corpus  
+
+Below we create a corpus out of the dataframe and peform cleaning operations. I created a function for the cleaning operations for later use when we create additional subsets for training and testing.  Below is summary details of the TDM.  
+
+```{r, warning=FALSE}
+corpus <- Corpus(VectorSource(df$text))
+
+clean_corp <- function(corp){
+    corp <- corp %>% tm_map(removeNumbers)
+    corp <- corp %>% tm_map(removePunctuation)
+    corp <- corp %>% tm_map(removeWords, stopwords())
+    corp <- corp %>% tm_map(stripWhitespace)
+    corp <- corp %>% tm_map(tolower)
+    corp <- corp %>% tm_map(stemDocument)
+    return(corp)
+}
+
+corpus <- clean_corp(corpus)
+
+tdm <- TermDocumentMatrix(corpus)
+tdm
+
+```
+
+The last cleanup item we perform is removal of sparse terms. Below we remove terms with less than 10 occurences.  
+
+```{r}
+#remove sparse
+tdm <- tdm %>% removeSparseTerms(1-10/length(corpus))
+tdm
+```
+
+## Term Frequency Word Cloud
+Below we look at the most frequent words for spam and ham  
+
+
+```{r, warning=FALSE}
+spam_indices <- which(df$type == "spam")
+wordcloud(corpus[spam_indices], min.freq=40)
+```
+
+```{r, warning=FALSE}
+ham_indices <- which(df$type == "ham")
+wordcloud(corpus[ham_indices], min.freq=40)
+```
+
+
+## Supervised Training  
+
+Below, we will split the data into a training and testing set, with 70% of messages for testing.  
+
+We isolate the correspondings subsets, create a new corpus for each, clean each corpus, then turn each into a DTM.  We will then use a naive Bayes classifier to predict if an sms is spam or ham.  
+
+
+
+```{r, warning=FALSE}
+set.seed(123)
+
+# 70/30 training/testing split
+sample_size <- floor(0.70 * nrow(df))
+train_idx <- sample(seq_len(nrow(df)), size = sample_size)
+
+training_df <- df[train_idx, ]
+testing_df <- df[-train_idx, ]
+
+# Create cleaned corpus for training and test data
+training_corp <- clean_corp(Corpus(VectorSource(training_df$text)))
+testing_corp <- clean_corp(Corpus(VectorSource(testing_df$text)))
+
+#DTMs from new corps
+training_dtm <- DocumentTermMatrix(training_corp)
+testing_dtm <- DocumentTermMatrix(testing_corp)
+
+# count function
+counter <- function(x) {
+  y <- ifelse(x > 0, 1,0)
+  y <- factor(y, levels=c(0,1), labels=c("No", "Yes"))
+  y
+}
+
+train_sms <- apply(training_dtm, 2, counter)
+test_sms <- apply(testing_dtm, 2, counter)
+
+# classification of sms
+classifier <- naiveBayes(train_sms, factor(training_df$type))
+```
+
+
+## Classification of the test data  
+
+Below we run the classifier on the test data:  
+
+
+```{r}
+
+predict_test <- predict(classifier, newdata=test_sms)
+
+table(predict_test, testing_df$type)
+
+```
+
+As shown above, using the Naive Bayes classifier the model was able to predict spam within the test data with 95% accuracy. 
+
+Sources:
+http://archive.ics.uci.edu/ml/datasets/sms+spam+collection
+https://www.rdocumentation.org/packages/e1071/versions/1.7-1/topics/naiveBayes
+https://rpubs.com/riazakhan94/naive_bayes_classifier_e1071
+https://rpubs.com/mzc/mlwr_nb_sms_spam
