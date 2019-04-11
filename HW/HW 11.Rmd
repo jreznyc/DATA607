@@ -1,0 +1,59 @@
+---
+title: 'Data 607: Eventbrite event recommendation'
+author: "John Perez"
+date: "4/10/2019"
+output: 
+    html_document: 
+        theme: cerulean
+        toc: true
+        number_sections: false
+---
+
+
+## {.tabset}  
+
+### Scenario Design analysis 
+
+1. Who are your target users?
+
+The target users are individuals who would like to attend musical or other thematic events.
+
+2. What are their key goals?
+
+Goals are to discover and attend events that are relevant to their musical or thematic interests.  
+
+3. How can you help them accomplish those goals?
+
+The site can offer personalized events that are relevant to the customer's musical interests, location, or a topic of interest (ie: talks, courses, etc.).
+
+
+### Reverse Engineering
+
+Suggestions seem to be based off the context of several items such as: 
+
+- Location:  The main page first offers events that are nearby. There doesnt appear to be any further refinement of the events being presented. I suspect this also has to do with any promotional agreements the site has with event organizers.  If you click on 'browse events' you are taken to a different landing page which displays events that are not only nearby but also popular.  
+
+- Previous purchases: On the "browse events" landing page, below the "Popular events in NY" section there is another section which displays events based on past purchase of a specific event. This appears to be content-based recommendation of events that are similar to some properties of a previously purchased event.  
+
+- Search box: The site allows searching for events which appears to return simple keyword based results across different categories of events.  
+
+### Recommendations  
+
+I would implement more dynamic recommendations across the site. I'd add a behavior tracking mechanism on the site to record which events get click-throughs. Additionally, while the site allows you to 'favorite' events, it doesnt appear to make any recommendations based on those likes.  
+
+Another element I would add is user-generated review for an event. If you purchase a ticket or sign up for guestlist to an event I'd send a followup email asking to rate that event. 
+
+I'd implement a "Recommended for you" section on the first post-sign-in landing page that uses similarity matching with the following as parameters (with varying weights): 
+
+- Past purchases
+- Liked events
+- Click-throughs
+- Ratings  
+
+This would depend on proper classification and similarity matching of events.  Possible features to include for classification could be:  
+
+- Venue  
+- Promoter/Organizer
+- Artist or Topic
+- Category of event (ie: music, speaker, meeting, etc.)
+
