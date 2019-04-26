@@ -1,0 +1,81 @@
+---
+title: "Data 607 HW 13 - NoSQL migration"
+author: "John Perez"
+date: "4/20/2019"
+output: html_document
+---
+
+## Introduction
+
+For this assignment we will migrate a MySQL database to MongoDB. We will be connecting directly to both database servers and migrating the various tables directly.  
+Finally, we will validate that all rows of data are present and accounted for in Mongo.  
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(RCurl)
+library(RMySQL)
+library(mongolite)
+```
+## Connect to MySQL  
+
+Here we connect to MySQL which already contains the flights database used during the SQL bridge course. We'll query the table names to ensure that it contains the tables we're interested in.  
+
+
+```{r}
+#connect to MySQL
+flights_db <- dbConnect(MySQL(), user="root", password="1234", dbname='flights', host='localhost')
+
+#Get names of tables
+(tables <- dbListTables(flights_db))
+
+
+```
+
+We've verified that the database contains five tables, airlines, airports, flights, planes, and weather.  I've saved these table names to a vector for use in the next step where we will iterate over each of those elements to copy them from one database to the other. Next we will copy these over to Mongo.  
+
+
+## Migration  
+
+In the chunk below I loop through the elements of the tables vector, which contains the names of the tables currently on MySQL. For each table I query MySQL returning all columns and rows. I then connect to and create a collection for that same table in Mongo. Next, I check if that collection has any existing data, if so, it gets dropped. Then finally I insert the full table into the Mongo collection.  
+
+
+```{r}
+#programmatically query the MySQL DB for each table and assign to a temporary variable, then insert to mongodb
+for(i in 1:length(tables)){
+    tbl <- dbGetQuery(flights_db,paste("SELECT * FROM",tables[i]))
+    con <- mongo(collection = tables[i], db = "flights")
+    if (con$count() > 0) {
+        con$drop() 
+    }
+    con$insert(tbl)
+}
+```
+
+## Verification  
+
+To ensure data was copied over, here we print the head of each table from the Mongo server.  
+
+```{r}
+for(i in 1:length(tables)){
+    print(head(mongo(collection=tables[i],db="flights")$find()))  
+}
+```
+
+Finally, to verify that all rows have been copied over, I will compare the number of rows for each table on both MySQL and Mongo directly. If they match up, R will print "ok" if there is a deviation, "not ok".  
+
+```{r}
+for(i in 1:length(tables)){
+    mongo_nrow <- nrow(mongo(collection=tables[i],db="flights")$find())
+    sql_nrow <- nrow(dbGetQuery(flights_db,paste("SELECT * FROM ",tables[i])))
+    if(mongo_nrow == sql_nrow){
+        print(paste(tables[i],"ok"))
+    }else{
+        print(paste(tables[i],"not ok"))
+    }
+}
+
+
+```
+
